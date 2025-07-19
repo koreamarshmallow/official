@@ -5,6 +5,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>한국마시멜로협회 - Korea Marshmallow Association</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-09FFTQ5WN6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-09FFTQ5WN6', {
+            page_title: '한국마시멜로협회',
+            page_location: window.location.href,
+            send_page_view: true
+        });
+
+        // 커스텀 이벤트 추가
+        function trackEvent(eventName, parameters = {}) {
+            gtag('event', eventName, parameters);
+        }
+
+        // 버튼 클릭 추적
+        document.addEventListener('DOMContentLoaded', function () {
+            // 회원가입 버튼 클릭 추적
+            document.querySelectorAll('button').forEach(button => {
+                if (button.textContent.includes('회원가입') || button.textContent.includes('협회 가입')) {
+                    button.addEventListener('click', () => {
+                        trackEvent('join_association_click', {
+                            button_text: button.textContent.trim()
+                        });
+                    });
+                }
+            });
+
+            // 문의 양식 제출 추적
+            const contactForm = document.getElementById('contactForm');
+            if (contactForm) {
+                contactForm.addEventListener('submit', () => {
+                    trackEvent('contact_form_submit', {
+                        form_location: 'contact_section'
+                    });
+                });
+            }
+
+            // 네비게이션 클릭 추적
+            document.querySelectorAll('nav a').forEach(link => {
+                link.addEventListener('click', () => {
+                    trackEvent('navigation_click', {
+                        link_text: link.textContent.trim(),
+                        link_url: link.getAttribute('href')
+                    });
+                });
+            });
+        });
+    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -681,4 +734,8 @@
         </script>
 </body>
 
+<<<<<<< HEAD </html>
+    =======
+
 </html>
+>>>>>>> b55ccd8ed33fe2459d78b7682434a4b10b1b197d
