@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+
+# Sitemap 위치
+Sitemap: https://koreamarshmallow.github.io/official/sitemap.xml
+
+# 크롤링 지연 (선택사항)
+Crawl-delay: 1
+
+# 특정 파일/폴더 제외 (필요시)
+Disallow: /.git/
+Disallow: /.github/
+Disallow: /.vscode/
+Disallow: /node_modules/
+
+# 검색엔진별 설정
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: NaverBot
+Allow: /

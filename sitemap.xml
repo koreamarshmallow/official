@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+    
+    <!-- 메인 페이지 -->
+    <url>
+        <loc>https://koreamarshmallow.github.io/official/</loc>
+        <lastmod>2024-01-19</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- 협회 소개 섹션 -->
+    <url>
+        <loc>https://koreamarshmallow.github.io/official/#about</loc>
+        <lastmod>2024-01-19</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 서비스 섹션 -->
+    <url>
+        <loc>https://koreamarshmallow.github.io/official/#services</loc>
+        <lastmod>2024-01-19</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- 뉴스 섹션 -->
+    <url>
+        <loc>https://koreamarshmallow.github.io/official/#news</loc>
+        <lastmod>2024-01-19</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- 문의 섹션 -->
+    <url>
+        <loc>https://koreamarshmallow.github.io/official/#contact</loc>
+        <lastmod>2024-01-19</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+</urlset>
