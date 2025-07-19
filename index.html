@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한국마시멜로협회 - Korea Marshmallow Association</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .section-padding {
+            padding: 6rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .section-padding {
+                padding: 4rem 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white/95 backdrop-blur-sm border-b border-gray-100 fixed w-full z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div
+                            class="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-cookie-bite text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-semibold text-gray-900">한국마시멜로협회</span>
+                    </div>
+                </div>
+                <div class="hidden lg:flex items-center space-x-10">
+                    <a href="#home" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">홈</a>
+                    <a href="#about"
+                        class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">협회소개</a>
+                    <a href="#services"
+                        class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">서비스</a>
+                    <a href="#news" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">뉴스</a>
+                    <a href="#contact"
+                        class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">문의</a>
+                </div>
+                <div class="hidden lg:flex items-center space-x-4">
+                    <button class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">
+                        로그인
+                    </button>
+                    <button
+                        class="bg-gray-900 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-gray-800 transition duration-200">
+                        회원가입
+                    </button>
+                </div>
+                <div class="lg:hidden flex items-center">
+                    <button class="mobile-menu-button p-2">
+                        <i class="fas fa-bars text-gray-700"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-gradient pt-20 pb-16">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center pt-16 pb-20">
+                <div class="max-w-4xl mx-auto">
+                    <h1 class="text-5xl lg:text-7xl font-bold text-gray-900 mb-8 leading-tight">
+                        마시멜로 산업의<br>
+                        <span class="text-gradient">새로운 기준</span>
+                    </h1>
+                    <p class="text-xl lg:text-2xl text-gray-600 mb-12 leading-relaxed max-w-3xl mx-auto">
+                        한국마시멜로협회는 품질 혁신과 산업 발전을 통해
+                        국내 마시멜로 시장의 미래를 만들어갑니다.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+                        <button
+                            class="bg-gray-900 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-800 transition duration-300 min-w-[200px]">
+                            협회 가입하기
+                        </button>
+                        <button
+                            class="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold text-lg hover:border-gray-400 hover:bg-gray-50 transition duration-300 min-w-[200px]">
+                            서비스 둘러보기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">500+</div>
+                        <div class="text-gray-600 font-medium">협회 회원사</div>
+                        <div class="text-sm text-gray-500 mt-2">전국 마시멜로 제조업체</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">28년</div>
+                        <div class="text-gray-600 font-medium">업계 경험</div>
+                        <div class="text-sm text-gray-500 mt-2">1995년 설립 이래</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="text-4xl font-bold text-gray-900 mb-2">15%</div>
+                        <div class="text-gray-600 font-medium">연간 성장률</div>
+                        <div class="text-sm text-gray-500 mt-2">지속적인 시장 확대</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    < !-- About Section -->
+        <section id="about" class="section-padding bg-white">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">협회 소개</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        한국마시멜로협회는 마시멜로 산업의 혁신과 발전을 선도하는
+                        대한민국 최고의 전문 기관입니다.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
+                    <div>
+                        <h3 class="text-3xl font-bold text-gray-900 mb-6">
+                            마시멜로 산업의 미래를 만들어갑니다
+                        </h3>
+                        <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+                            1995년 설립 이래, 한국마시멜로협회는 국내 마시멜로 산업의 발전을 위해
+                            끊임없이 노력해왔습니다. 우리는 전통적인 제조 방식과 현대적인 기술을
+                            조화롭게 결합하여 세계 최고 수준의 마시멜로를 만들어가고 있습니다.
+                        </p>
+                        <button
+                            class="bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition duration-300">
+                            더 자세히 알아보기
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="bg-gray-50 rounded-2xl p-6 text-center">
+                            <div class="text-3xl font-bold text-gray-900 mb-2">500+</div>
+                            <div class="text-gray-600 font-medium">협회 회원사</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-2xl p-6 text-center">
+                            <div class="text-3xl font-bold text-gray-900 mb-2">28년</div>
+                            <div class="text-gray-600 font-medium">업계 경험</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-2xl p-6 text-center">
+                            <div class="text-3xl font-bold text-gray-900 mb-2">15%</div>
+                            <div class="text-gray-600 font-medium">연간 성장률</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-2xl p-6 text-center">
+                            <div class="text-3xl font-bold text-gray-900 mb-2">100%</div>
+                            <div class="text-gray-600 font-medium">품질 보장</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-award text-gray-700 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">품질 인증</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            엄격한 품질 기준을 통한 마시멜로 제품 인증 서비스를 제공합니다.
+                        </p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-flask text-gray-700 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">연구 개발</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            혁신적인 마시멜로 제조 기술 연구 및 개발을 진행합니다.
+                        </p>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-gray-700 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">교육 지원</h3>
+                        <p class="text-gray-600 leading-relaxed">
+                            마시멜로 제조업체 및 관련 종사자 교육 프로그램을 운영합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section id="services" class="section-padding bg-gray-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">주요 서비스</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        한국마시멜로협회가 제공하는 전문적이고 체계적인 서비스를 만나보세요.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="flex items-start space-x-6">
+                            <div
+                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-certificate text-gray-700 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-3">품질 인증 서비스</h3>
+                                <p class="text-gray-600 mb-4 leading-relaxed">
+                                    국제 표준에 부합하는 엄격한 품질 검사를 통해 마시멜로 제품의
+                                    안전성과 품질을 보장합니다.
+                                </p>
+                                <ul class="text-sm text-gray-500 space-y-2">
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        HACCP 인증 지원
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        품질 관리 시스템 구축
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        정기 품질 검사
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="flex items-start space-x-6">
+                            <div
+                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-graduation-cap text-gray-700 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-3">전문 교육 프로그램</h3>
+                                <p class="text-gray-600 mb-4 leading-relaxed">
+                                    마시멜로 제조 기술부터 품질 관리까지, 체계적인 교육 과정을
+                                    통해 전문 인력을 양성합니다.
+                                </p>
+                                <ul class="text-sm text-gray-500 space-y-2">
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        기초 제조 기술 교육
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        고급 품질 관리 과정
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        온라인 교육 플랫폼
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="flex items-start space-x-6">
+                            <div
+                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-handshake text-gray-700 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-3">비즈니스 컨설팅</h3>
+                                <p class="text-gray-600 mb-4 leading-relaxed">
+                                    마시멜로 사업 진출부터 시장 확대까지, 전문적인 컨설팅
+                                    서비스를 제공합니다.
+                                </p>
+                                <ul class="text-sm text-gray-500 space-y-2">
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        시장 분석 및 전략 수립
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        사업 계획서 작성 지원
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        투자 유치 컨설팅
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 card-hover">
+                        <div class="flex items-start space-x-6">
+                            <div
+                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-network-wired text-gray-700 text-xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-gray-900 mb-3">네트워킹 지원</h3>
+                                <p class="text-gray-600 mb-4 leading-relaxed">
+                                    업계 관계자들과의 네트워킹 기회를 제공하여 비즈니스
+                                    확장을 도와드립니다.
+                                </p>
+                                <ul class="text-sm text-gray-500 space-y-2">
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        정기 업계 모임
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        전시회 및 박람회 참가
+                                    </li>
+                                    <li class="flex items-center">
+                                        <i class="fas fa-check text-green-500 mr-2"></i>
+                                        해외 진출 지원
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- News Section -->
+        <section id="news" class="section-padding bg-white">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">최신 소식</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        한국마시멜로협회의 최신 뉴스와 업계 동향을 확인하세요.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                    <article class="bg-white rounded-2xl border border-gray-100 overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <i class="fas fa-trophy text-gray-400 text-4xl"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-sm text-gray-500 mb-3">2024.01.15</div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3 leading-tight">
+                                2024 마시멜로 품질대상 시상식 개최
+                            </h3>
+                            <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                                올해 최고 품질의 마시멜로 제품을 선정하는 품질대상 시상식이
+                                성공적으로 개최되었습니다.
+                            </p>
+                            <a href="#"
+                                class="text-gray-900 font-medium text-sm hover:text-gray-700 transition duration-200">
+                                자세히 보기 →
+                            </a>
+                        </div>
+                    </article>
+
+                    <article class="bg-white rounded-2xl border border-gray-100 overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <i class="fas fa-flask text-gray-400 text-4xl"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-sm text-gray-500 mb-3">2024.01.10</div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3 leading-tight">
+                                신기술 마시멜로 제조법 연구 발표
+                            </h3>
+                            <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                                친환경적이고 건강한 마시멜로 제조를 위한 혁신적인
+                                기술이 개발되었습니다.
+                            </p>
+                            <a href="#"
+                                class="text-gray-900 font-medium text-sm hover:text-gray-700 transition duration-200">
+                                자세히 보기 →
+                            </a>
+                        </div>
+                    </article>
+
+                    <article class="bg-white rounded-2xl border border-gray-100 overflow-hidden card-hover">
+                        <div class="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <i class="fas fa-globe text-gray-400 text-4xl"></i>
+                        </div>
+                        <div class="p-6">
+                            <div class="text-sm text-gray-500 mb-3">2024.01.05</div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3 leading-tight">
+                                해외 마시멜로 시장 진출 지원 프로그램
+                            </h3>
+                            <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                                국내 마시멜로 업체의 해외 진출을 위한 종합 지원
+                                프로그램이 시작됩니다.
+                            </p>
+                            <a href="#"
+                                class="text-gray-900 font-medium text-sm hover:text-gray-700 transition duration-200">
+                                자세히 보기 →
+                            </a>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="text-center">
+                    <button
+                        class="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition duration-300">
+                        더 많은 소식 보기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact" class="section-padding bg-gray-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-20">
+                    <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">문의하기</h2>
+                    <p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                        한국마시멜로협회에 대한 궁금한 점이나 협력 제안이 있으시면 언제든 연락주세요.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                    <div>
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                            <h3 class="text-2xl font-semibold text-gray-900 mb-8">연락처 정보</h3>
+
+                            <div class="space-y-6">
+                                <div class="flex items-start space-x-4">
+                                    <div
+                                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-map-marker-alt text-gray-700"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 mb-1">주소</h4>
+                                        <p class="text-gray-600">서울특별시 강남구 테헤란로 123<br>마시멜로타워 15층</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start space-x-4">
+                                    <div
+                                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-phone text-gray-700"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 mb-1">전화번호</h4>
+                                        <p class="text-gray-600">02-1234-5678</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start space-x-4">
+                                    <div
+                                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-envelope text-gray-700"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 mb-1">이메일</h4>
+                                        <p class="text-gray-600">info@marshmallow.or.kr</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start space-x-4">
+                                    <div
+                                        class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fas fa-clock text-gray-700"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900 mb-1">운영시간</h4>
+                                        <p class="text-gray-600">평일 09:00 - 18:00<br>토요일 09:00 - 13:00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                            <h3 class="text-2xl font-semibold text-gray-900 mb-8">문의 양식</h3>
+
+                            <form id="contactForm" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">이름</label>
+                                        <input type="text"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition duration-200"
+                                            placeholder="홍길동">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">회사명</label>
+                                        <input type="text"
+                                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition duration-200"
+                                            placeholder="회사명">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                                    <input type="email"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition duration-200"
+                                        placeholder="example@email.com">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">문의 유형</label>
+                                    <select
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition duration-200">
+                                        <option>일반 문의</option>
+                                        <option>회원가입 문의</option>
+                                        <option>서비스 문의</option>
+                                        <option>협력 제안</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">메시지</label>
+                                    <textarea rows="4"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent transition duration-200"
+                                        placeholder="문의 내용을 입력해주세요..."></textarea>
+                                </div>
+
+                                <button type="submit"
+                                    class="w-full bg-gray-900 text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition duration-300">
+                                    문의 보내기
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-100 py-16">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center mb-6">
+                            <div
+                                class="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-cookie-bite text-white text-sm"></i>
+                            </div>
+                            <span class="text-xl font-semibold text-gray-900">한국마시멜로협회</span>
+                        </div>
+                        <p class="text-gray-600 mb-6 leading-relaxed max-w-md">
+                            대한민국 마시멜로 산업의 발전과 품질 향상을 위해 설립된 전문 기관으로,
+                            회원사들의 성공적인 사업 운영을 지원합니다.
+                        </p>
+                        <div class="flex space-x-4">
+                            <a href="#"
+                                class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition duration-200">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#"
+                                class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition duration-200">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#"
+                                class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition duration-200">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="#"
+                                class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition duration-200">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">빠른 링크</h4>
+                        <ul class="space-y-3">
+                            <li><a href="#about"
+                                    class="text-gray-600 hover:text-gray-900 transition duration-200">협회소개</a></li>
+                            <li><a href="#services"
+                                    class="text-gray-600 hover:text-gray-900 transition duration-200">서비스</a></li>
+                            <li><a href="#news" class="text-gray-600 hover:text-gray-900 transition duration-200">뉴스</a>
+                            </li>
+                            <li><a href="#contact"
+                                    class="text-gray-600 hover:text-gray-900 transition duration-200">문의</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">서비스</h4>
+                        <ul class="space-y-3">
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">품질 인증</a>
+                            </li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">교육
+                                    프로그램</a></li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">컨설팅</a>
+                            </li>
+                            <li><a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">네트워킹</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <p class="text-gray-600 text-sm mb-4 md:mb-0">
+                        © 2024 한국마시멜로협회. All rights reserved.
+                    </p>
+                    <div class="flex space-x-6 text-sm">
+                        <a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">개인정보처리방침</a>
+                        <a href="#" class="text-gray-600 hover:text-gray-900 transition duration-200">이용약관</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script>
+            // Supabase 초기화
+            const supabaseUrl = 'YOUR_SUPABASE_URL'
+            const supabaseKey = 'YOUR_SUPABASE_ANON_KEY'
+            // const supabase = supabase.createClient(supabaseUrl, supabaseKey)
+
+            // 모바일 메뉴 토글
+            document.querySelector('.mobile-menu-button').addEventListener('click', function () {
+                // 모바일 메뉴 구현
+                alert('모바일 메뉴 기능을 구현해주세요.');
+            });
+
+            // 부드러운 스크롤
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // 문의 양식 제출
+            document.getElementById('contactForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                alert('문의가 성공적으로 전송되었습니다. 빠른 시일 내에 답변드리겠습니다.');
+                this.reset();
+            });
+
+            // 스크롤 시 네비게이션 효과
+            window.addEventListener('scroll', function () {
+                const nav = document.querySelector('nav');
+                if (window.scrollY > 50) {
+                    nav.classList.add('shadow-sm');
+                } else {
+                    nav.classList.remove('shadow-sm');
+                }
+            });
+
+            // 카드 호버 효과 개선
+            document.querySelectorAll('.card-hover').forEach(card => {
+                card.addEventListener('mouseenter', function () {
+                    this.style.transform = 'translateY(-4px)';
+                });
+
+                card.addEventListener('mouseleave', function () {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        </script>
+</body>
+
+</html>
