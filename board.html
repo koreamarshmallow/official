@@ -8,6 +8,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -36,7 +37,7 @@
                         <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
                             <i class="fas fa-cookie-bite text-white text-sm"></i>
                         </div>
-                        <a href="index.html" class="text-xl font-semibold text-gray-900">한국마시멜로우협회</a>
+                        <a href="index.html" class="text-xl font-semibold text-gray-900">한국마시멜로우</a>
                     </div>
                 </div>
                 <div class="hidden lg:flex items-center space-x-10">
@@ -87,12 +88,18 @@
 
             <!-- Posts List -->
             <div id="postsList" class="space-y-4">
-                <!-- Posts will be loaded here -->
+                <!-- 게시글이 여기에 동적으로 로드됩니다 -->
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-gray-300 text-4xl mb-4"></i>
+                    <p class="text-gray-500 text-lg">게시글을 불러오는 중...</p>
+                </div>
             </div>
 
             <!-- Pagination -->
             <div id="pagination" class="mt-8 flex justify-center">
-                <!-- Pagination will be loaded here -->
+                <button class="px-3 py-2 mx-1 bg-pink-500 text-white rounded-lg">1</button>
+                <button class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">2</button>
+                <button class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">3</button>
             </div>
         </div>
     </main>
@@ -147,29 +154,68 @@
         </div>
     </div>
 
-    <!-- Post Detail Modal -->
-    <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                <div id="postDetail">
-                    <!-- Post detail will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="supabase-config.js"></script>
     <script>
+        console.log('게시판 페이지 로드됨');
+        
+        // Supabase 설정 (실제 값 사용)
+        window.SUPABASE_CONFIG = {
+            url: 'https://lvawgzthxcougqtqfhzb.supabase.co',
+            anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2YXdnenRoeGNvdWdxdHFmaHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTE4NzgsImV4cCI6MjA2ODQ2Nzg3OH0.wm2IbN88xYpAKDfShRE6_I8ke_xEicQvxSqhte4AYyw'
+        };
+        
         // Supabase 클라이언트 초기화
-        const supabaseUrl = 'YOUR_SUPABASE_URL';
-        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-        // 전역 변수
-        let currentPage = 1;
-        const postsPerPage = 10;
-        let currentSort = 'latest';
-
+        let supabaseClient = null;
+        let useSupabase = false;
+        
+        // Supabase 연결 확인
+        async function checkSupabaseConnection() {
+            const config = window.SUPABASE_CONFIG;
+            try {
+                console.log('🔗 Supabase 연결 시도 중...');
+                console.log('URL:', config.url);
+                console.log('Key 길이:', config.anonKey?.length || 0);
+                
+                // Supabase 라이브러리가 로드되었는지 확인
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase 라이브러리가 로드되지 않았습니다');
+                }
+                
+                // Supabase 클라이언트 직접 생성
+                supabaseClient = supabase.createClient(config.url, config.anonKey);
+                
+                // 연결 테스트
+                const { data, error } = await supabaseClient
+                    .from('board_posts')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                useSupabase = true;
+                console.log('✅ Supabase 연결 및 테스트 성공');
+                
+            } catch (error) {
+                console.warn('❌ Supabase 연결 실패, 로컬 스토리지 사용:', error);
+                useSupabase = false;
+                supabaseClient = null;
+            }
+        }
+        
+        // 로컬 스토리지를 사용한 임시 데이터 관리
+        const STORAGE_KEY = 'marshmallow_board_posts';
+        
+        // 로컬 스토리지에서 게시글 가져오기
+        function getPostsFromStorage() {
+            const posts = localStorage.getItem(STORAGE_KEY);
+            return posts ? JSON.parse(posts) : [];
+        }
+        
+        // 로컬 스토리지에 게시글 저장
+        function savePostsToStorage(posts) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+        }
+        
         // 사용자 IP 가져오기
         async function getUserIP() {
             try {
@@ -181,327 +227,430 @@
                 return 'unknown';
             }
         }
+        
+        const POSTS_PER_PAGE = 10;
+        let currentPage = 1;
+        let totalPosts = 0;
 
-        // 게시글 목록 로드
-        async function loadPosts() {
-            try {
-                let query = supabase
-                    .from('board_posts')
-                    .select('*', { count: 'exact' });
-
-                // 정렬 적용
-                switch (currentSort) {
+        // 게시글 목록 로드 (Supabase 또는 로컬 스토리지)
+        async function loadPosts(page = 1) {
+            currentPage = page;
+            let noticePosts = [];
+            let posts = [];
+            let count = 0;
+            if (useSupabase && supabaseClient) {
+                try {
+                    const sortBy = document.getElementById('sortSelect')?.value || 'latest';
+                    // 공지글만 따로 조회
+                    const { data: notices, error: noticeError } = await supabaseClient
+                        .from('board_posts')
+                        .select('*')
+                        .eq('is_notice', true)
+                        .order('created_at', { ascending: false });
+                    noticePosts = notices || [];
+                    // 일반글만 조회
+                    let query = supabaseClient.from('board_posts').select('*', { count: 'exact' }).eq('is_notice', false);
+                    switch (sortBy) {
+                        case 'latest':
+                            query = query.order('created_at', { ascending: false });
+                            break;
+                        case 'likes':
+                            query = query.order('likes', { ascending: false });
+                            break;
+                        case 'oldest':
+                            query = query.order('created_at', { ascending: true });
+                            break;
+                        default:
+                            query = query.order('created_at', { ascending: false });
+                    }
+                    // 페이지네이션 적용
+                    const from = (page - 1) * POSTS_PER_PAGE;
+                    const to = from + POSTS_PER_PAGE - 1;
+                    const { data, error, count: totalCount } = await query.range(from, to);
+                    if (error) {
+                        console.error('❌ Supabase 조회 오류:', error);
+                        throw error;
+                    }
+                    posts = data || [];
+                    count = totalCount || 0;
+                } catch (error) {
+                    console.error('게시글 로드 실패:', error);
+                    posts = [];
+                    count = 0;
+                }
+            } else {
+                // 로컬 스토리지
+                const allPosts = getPostsFromStorage();
+                // 공지글/일반글 분리
+                noticePosts = allPosts.filter(p => p.is_notice);
+                let normalPosts = allPosts.filter(p => !p.is_notice);
+                const sortBy = document.getElementById('sortSelect')?.value || 'latest';
+                switch (sortBy) {
                     case 'latest':
-                        query = query.order('created_at', { ascending: false });
+                        normalPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                         break;
                     case 'likes':
-                        query = query.order('likes', { ascending: false });
+                        normalPosts.sort((a, b) => (b.likes || 0) - (a.likes || 0));
                         break;
                     case 'oldest':
-                        query = query.order('created_at', { ascending: true });
+                        normalPosts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
                         break;
+                    default:
+                        normalPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 }
-
-                // 페이지네이션 적용
-                const from = (currentPage - 1) * postsPerPage;
-                const to = from + postsPerPage - 1;
-                query = query.range(from, to);
-
-                const { data: posts, error, count } = await query;
-
-                if (error) throw error;
-
-                displayPosts(posts);
-                displayPagination(count);
-                document.getElementById('totalPosts').textContent = count || 0;
-
-            } catch (error) {
-                console.error('게시글 로드 실패:', error);
-                alert('게시글을 불러오는데 실패했습니다.');
+                count = normalPosts.length;
+                const from = (page - 1) * POSTS_PER_PAGE;
+                const to = from + POSTS_PER_PAGE;
+                posts = normalPosts.slice(from, to);
             }
+            totalPosts = count;
+            document.getElementById('totalPosts').textContent = count;
+            displayPosts(posts, noticePosts);
+            renderPagination();
         }
 
-        // 게시글 표시
-        function displayPosts(posts) {
+        // 페이지네이션 렌더링
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+            if (totalPages <= 1) return;
+            // 이전 버튼
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '이전';
+            prevBtn.className = 'px-3 py-2 mx-1 rounded-lg ' + (currentPage === 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100');
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { if (currentPage > 1) loadPosts(currentPage - 1); };
+            pagination.appendChild(prevBtn);
+            // 페이지 번호
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = 'px-3 py-2 mx-1 rounded-lg ' + (i === currentPage ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100');
+                btn.onclick = () => loadPosts(i);
+                pagination.appendChild(btn);
+            }
+            // 다음 버튼
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '다음';
+            nextBtn.className = 'px-3 py-2 mx-1 rounded-lg ' + (currentPage === totalPages ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100');
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { if (currentPage < totalPages) loadPosts(currentPage + 1); };
+            pagination.appendChild(nextBtn);
+        }
+
+        // 게시글 표시 (공지글 + 일반글)
+        function displayPosts(posts, noticePosts = []) {
             const postsList = document.getElementById('postsList');
-            
+            let html = '';
+            // 공지글 먼저
+            if (noticePosts && noticePosts.length > 0) {
+                html += noticePosts.map(post => `
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 shadow-sm mb-2 card-hover cursor-pointer" onclick="viewPost(${post.id})">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>
+                                    <h3 class="text-lg font-semibold text-gray-900 hover:text-pink-600 transition duration-200">
+                                        ${post.title}
+                                    </h3>
+                                </div>
+                                <p class="text-gray-600 mb-3">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                        <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
+                                        <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
+                                        <span><i class="fas fa-thumbs-up mr-1"></i>${post.likes || 0}</span>
+                                        <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
+                                    </div>
+                                    <button onclick="event.stopPropagation(); likePost(${post.id})" class="flex items-center space-x-1 text-pink-500 hover:text-pink-600 transition duration-200 px-3 py-1 rounded-lg hover:bg-pink-50">
+                                        <i class="fas fa-heart text-sm"></i>
+                                        <span class="text-sm font-medium">추천</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            // 일반글
             if (!posts || posts.length === 0) {
-                postsList.innerHTML = `
+                html += `
                     <div class="text-center py-12">
                         <i class="fas fa-clipboard-list text-gray-300 text-6xl mb-4"></i>
                         <p class="text-gray-500 text-lg">아직 게시글이 없습니다.</p>
                         <p class="text-gray-400">첫 번째 글을 작성해보세요!</p>
                     </div>
                 `;
-                return;
-            }
-
-            postsList.innerHTML = posts.map(post => `
-                <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-100 card-hover cursor-pointer" onclick="viewPost(${post.id})">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-2 mb-2">
-                                ${post.is_notice ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>' : ''}
-                                <h3 class="text-lg font-semibold text-gray-900 hover:text-pink-600 transition duration-200">
-                                    ${post.title}
-                                </h3>
-                            </div>
-                            <p class="text-gray-600 mb-3 line-clamp-2">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
-                            <div class="flex items-center space-x-4 text-sm text-gray-500">
-                                <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
-                                <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
-                                <span><i class="fas fa-thumbs-up mr-1"></i>${post.likes || 0}</span>
-                                <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
+            } else {
+                html += posts.map(post => `
+                    <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-100 card-hover cursor-pointer" onclick="viewPost(${post.id})">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    ${post.is_notice ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>' : ''}
+                                    <h3 class="text-lg font-semibold text-gray-900 hover:text-pink-600 transition duration-200">
+                                        ${post.title}
+                                    </h3>
+                                </div>
+                                <p class="text-gray-600 mb-3">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                        <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
+                                        <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
+                                        <span><i class="fas fa-thumbs-up mr-1"></i>${post.likes || 0}</span>
+                                        <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
+                                    </div>
+                                    <button onclick="event.stopPropagation(); likePost(${post.id})" class="flex items-center space-x-1 text-pink-500 hover:text-pink-600 transition duration-200 px-3 py-1 rounded-lg hover:bg-pink-50">
+                                        <i class="fas fa-heart text-sm"></i>
+                                        <span class="text-sm font-medium">추천</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
+            postsList.innerHTML = html;
         }
-
-        // 페이지네이션 표시
-        function displayPagination(totalCount) {
-            const totalPages = Math.ceil(totalCount / postsPerPage);
-            const pagination = document.getElementById('pagination');
-            
-            if (totalPages <= 1) {
-                pagination.innerHTML = '';
-                return;
-            }
-
-            let paginationHTML = '';
-            
-            // 이전 페이지
-            if (currentPage > 1) {
-                paginationHTML += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">이전</button>`;
-            }
-
-            // 페이지 번호
-            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
-                paginationHTML += `
-                    <button onclick="changePage(${i})" class="px-3 py-2 mx-1 ${i === currentPage ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-lg transition duration-200">
-                        ${i}
-                    </button>
-                `;
-            }
-
-            // 다음 페이지
-            if (currentPage < totalPages) {
-                paginationHTML += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">다음</button>`;
-            }
-
-            pagination.innerHTML = paginationHTML;
-        }
-
-        // 페이지 변경
-        function changePage(page) {
-            currentPage = page;
-            loadPosts();
-        }
-
-        // 게시글 작성
+        
+        // 게시글 작성 (Supabase 또는 로컬 스토리지)
         async function submitPost(formData) {
             try {
+                console.log('게시글 작성 중...', formData);
+                
                 const userIP = await getUserIP();
                 
-                const postData = {
-                    title: formData.title,
-                    content: formData.content,
-                    nickname: formData.nickname,
-                    email: formData.email || null,
-                    ip_address: userIP,
-                    is_notice: formData.isNotice || false,
-                    likes: 0,
-                    views: 0,
-                    created_at: new Date().toISOString()
-                };
-
-                const { data, error } = await supabase
-                    .from('board_posts')
-                    .insert([postData]);
-
-                if (error) throw error;
-
-                alert('게시글이 성공적으로 작성되었습니다!');
-                closeWriteModal();
-                loadPosts();
-
+                if (useSupabase) {
+                    // Supabase에 직접 저장
+                    const { data, error } = await supabaseClient
+                        .from('board_posts')
+                        .insert([
+                            {
+                                title: formData.title,
+                                content: formData.content,
+                                nickname: formData.nickname,
+                                email: formData.email || null,
+                                ip_address: userIP,
+                                is_notice: formData.isNotice || false,
+                                likes: 0,
+                                views: 0
+                            }
+                        ])
+                        .select();
+                    
+                    if (error) {
+                        console.error('Supabase 저장 오류:', error);
+                        throw error;
+                    }
+                    
+                    console.log('✅ Supabase에 게시글 저장 성공:', data);
+                    alert('게시글이 성공적으로 작성되었습니다!');
+                    closeWriteModal();
+                    loadPosts();
+                } else {
+                    // 로컬 스토리지에 저장
+                    const posts = getPostsFromStorage();
+                    const newPost = {
+                        id: Date.now(),
+                        title: formData.title,
+                        content: formData.content,
+                        nickname: formData.nickname,
+                        email: formData.email || null,
+                        ip_address: userIP,
+                        is_notice: formData.isNotice || false,
+                        likes: 0,
+                        views: 0,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    posts.unshift(newPost);
+                    savePostsToStorage(posts);
+                    
+                    alert('게시글이 성공적으로 작성되었습니다!');
+                    closeWriteModal();
+                    loadPosts();
+                }
+                
             } catch (error) {
                 console.error('게시글 작성 실패:', error);
                 alert('게시글 작성에 실패했습니다.');
             }
         }
-
-        // 게시글 상세보기
+        
+        // 게시글 상세보기 (Supabase 또는 로컬 스토리지)
         async function viewPost(postId) {
-            try {
-                // 조회수 증가
-                await supabase
-                    .from('board_posts')
-                    .update({ views: supabase.sql`views + 1` })
-                    .eq('id', postId);
-
-                // 게시글 데이터 가져오기
-                const { data: post, error } = await supabase
-                    .from('board_posts')
-                    .select('*')
-                    .eq('id', postId)
-                    .single();
-
-                if (error) throw error;
-
-                displayPostDetail(post);
-                document.getElementById('detailModal').classList.remove('hidden');
-
-            } catch (error) {
-                console.error('게시글 로드 실패:', error);
-                alert('게시글을 불러오는데 실패했습니다.');
-            }
+            location.href = `post.html?id=${postId}`;
         }
-
-        // 게시글 상세 표시
-        function displayPostDetail(post) {
-            const postDetail = document.getElementById('postDetail');
-            postDetail.innerHTML = `
-                <div class="flex justify-between items-start mb-6">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-2 mb-2">
-                            ${post.is_notice ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>' : ''}
-                            <h1 class="text-2xl font-bold text-gray-900">${post.title}</h1>
-                        </div>
-                        <div class="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                            <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
-                            <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleString('ko-KR')}</span>
-                            <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
-                        </div>
-                    </div>
-                    <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <div class="prose max-w-none mb-6">
-                    <div class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.content}</div>
-                </div>
-                
-                <div class="border-t pt-4">
-                    <div class="flex items-center justify-between">
-                        <button onclick="likePost(${post.id})" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-pink-100 text-gray-700 hover:text-pink-600 rounded-lg transition duration-200">
-                            <i class="fas fa-thumbs-up"></i>
-                            <span>추천 (<span id="likeCount">${post.likes || 0}</span>)</span>
-                        </button>
-                        
-                        <div class="flex space-x-2">
-                            <button onclick="closeDetailModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200">
-                                닫기
-                            </button>
-                            <button onclick="deletePost(${post.id})" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">
-                                삭제
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 게시글 추천
+        
+        // 게시글 추천 기능 (Supabase 또는 로컬 스토리지)
         async function likePost(postId) {
-            try {
-                const { data, error } = await supabase
-                    .from('board_posts')
-                    .update({ likes: supabase.sql`likes + 1` })
-                    .eq('id', postId)
-                    .select();
-
-                if (error) throw error;
-
-                document.getElementById('likeCount').textContent = data[0].likes;
-                loadPosts(); // 목록 새로고침
-
-            } catch (error) {
-                console.error('추천 실패:', error);
-                alert('추천에 실패했습니다.');
+            console.log('게시글 추천:', postId);
+            
+            if (useSupabase) {
+                try {
+                    // 먼저 현재 추천수를 가져온 후 증가
+                    const { data: currentPost, error: fetchError } = await supabaseClient
+                        .from('board_posts')
+                        .select('likes')
+                        .eq('id', postId)
+                        .single();
+                    
+                    if (fetchError) {
+                        throw fetchError;
+                    }
+                    
+                    // 추천수 증가
+                    const { data, error } = await supabaseClient
+                        .from('board_posts')
+                        .update({ likes: (currentPost.likes || 0) + 1 })
+                        .eq('id', postId)
+                        .select();
+                    
+                    if (error) {
+                        console.error('추천 업데이트 오류:', error);
+                        alert('추천에 실패했습니다.');
+                        return;
+                    }
+                    
+                    console.log('✅ 추천 성공:', data);
+                    
+                    // 성공 메시지 표시
+                    const button = event.target.closest('button');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-heart text-sm"></i><span class="text-sm font-medium">추천됨!</span>';
+                    button.classList.add('bg-pink-100');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('bg-pink-100');
+                    }, 1500);
+                    
+                    // 목록 새로고침
+                    loadPosts();
+                    
+                } catch (error) {
+                    console.error('추천 오류:', error);
+                    alert('추천에 실패했습니다.');
+                }
+            } else {
+                // 로컬 스토리지 사용
+                const posts = getPostsFromStorage();
+                const post = posts.find(p => p.id === postId);
+                
+                if (!post) {
+                    alert('게시글을 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // 추천수 증가
+                post.likes = (post.likes || 0) + 1;
+                savePostsToStorage(posts);
+                
+                // 성공 메시지 표시
+                const button = event.target.closest('button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-heart text-sm"></i><span class="text-sm font-medium">추천됨!</span>';
+                button.classList.add('bg-pink-100');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-pink-100');
+                }, 1500);
+                
+                loadPosts(); // 추천수 업데이트 반영
             }
         }
-
-        // 게시글 삭제
-        async function deletePost(postId) {
-            if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
-
-            try {
-                const { error } = await supabase
-                    .from('board_posts')
-                    .delete()
-                    .eq('id', postId);
-
-                if (error) throw error;
-
-                alert('게시글이 삭제되었습니다.');
-                closeDetailModal();
-                loadPosts();
-
-            } catch (error) {
-                console.error('삭제 실패:', error);
-                alert('게시글 삭제에 실패했습니다.');
-            }
-        }
-
+        
         // 모달 관련 함수들
         function openWriteModal() {
+            console.log('글쓰기 모달 열기');
             document.getElementById('writeModal').classList.remove('hidden');
         }
-
+        
         function closeWriteModal() {
+            console.log('글쓰기 모달 닫기');
             document.getElementById('writeModal').classList.add('hidden');
             document.getElementById('postForm').reset();
         }
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').classList.add('hidden');
-        }
-
-        // 이벤트 리스너
+        
+        // 이벤트 리스너 등록
         document.addEventListener('DOMContentLoaded', function() {
-            // 초기 로드
-            loadPosts();
-
-            // 글쓰기 버튼
-            document.getElementById('writePostBtn').addEventListener('click', openWriteModal);
+            console.log('DOM 로드 완료');
             
-            // 모달 닫기
-            document.getElementById('closeModal').addEventListener('click', closeWriteModal);
-            document.getElementById('cancelBtn').addEventListener('click', closeWriteModal);
-
+            // 간단한 초기화
+            setTimeout(async () => {
+                try {
+                    // Supabase 클라이언트 직접 생성
+                    const config = window.SUPABASE_CONFIG;
+                    supabaseClient = supabase.createClient(config.url, config.anonKey);
+                    useSupabase = true;
+                    await loadPosts(1);
+                } catch (error) {
+                    console.error('❌ 초기화 실패:', error);
+                    useSupabase = false;
+                    loadPosts(1); // 로컬 스토리지로 폴백
+                }
+            }, 100);
+            
+            // 글쓰기 버튼
+            const writeBtn = document.getElementById('writePostBtn');
+            if (writeBtn) {
+                writeBtn.addEventListener('click', function() {
+                    console.log('글쓰기 버튼 클릭됨');
+                    openWriteModal();
+                });
+            }
+            
+            // 모달 닫기 버튼들
+            const closeBtn = document.getElementById('closeModal');
+            const cancelBtn = document.getElementById('cancelBtn');
+            
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeWriteModal);
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', closeWriteModal);
+            }
+            
             // 정렬 변경
-            document.getElementById('sortSelect').addEventListener('change', function(e) {
-                currentSort = e.target.value;
-                currentPage = 1;
-                loadPosts();
-            });
-
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    console.log('정렬 변경:', this.value);
+                    loadPosts();
+                });
+            }
+            
             // 폼 제출
-            document.getElementById('postForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const formData = {
-                    title: document.getElementById('title').value,
-                    content: document.getElementById('content').value,
-                    nickname: document.getElementById('nickname').value,
-                    email: document.getElementById('email').value,
-                    isNotice: document.getElementById('isNotice').checked
-                };
-
-                submitPost(formData);
-            });
-
+            const postForm = document.getElementById('postForm');
+            if (postForm) {
+                postForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('폼 제출됨');
+                    
+                    const formData = {
+                        title: document.getElementById('title').value,
+                        content: document.getElementById('content').value,
+                        nickname: document.getElementById('nickname').value,
+                        email: document.getElementById('email').value,
+                        isNotice: document.getElementById('isNotice').checked
+                    };
+                    
+                    console.log('폼 데이터:', formData);
+                    submitPost(formData);
+                });
+            }
+            
             // 모달 외부 클릭시 닫기
-            document.getElementById('writeModal').addEventListener('click', function(e) {
-                if (e.target === this) closeWriteModal();
-            });
-
-            document.getElementById('detailModal').addEventListener('click', function(e) {
-                if (e.target === this) closeDetailModal();
-            });
+            const writeModal = document.getElementById('writeModal');
+            if (writeModal) {
+                writeModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeWriteModal();
+                    }
+                });
+            }
         });
     </script>
 </body>

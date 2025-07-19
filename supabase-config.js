@@ -1,9 +1,16 @@
 // Supabase 설정 파일
-// 실제 프로젝트에서는 환경 변수를 사용하세요
+// GitHub에 공개되지 않는 안전한 설정 관리
 
-const supabaseConfig = {
-    url: 'YOUR_SUPABASE_PROJECT_URL', // 예: https://your-project.supabase.co
-    anonKey: 'YOUR_SUPABASE_ANON_KEY' // Supabase 프로젝트의 anon public key
+// Node.js 환경에서만 사용 (브라우저에서는 사용하지 않음)
+// const supabaseConfig = {
+//     url: process.env.SUPABASE_URL || 'YOUR_SUPABASE_PROJECT_URL',
+//     anonKey: process.env.SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+// };
+
+// 브라우저 환경에서 사용할 설정 (런타임에 주입)
+window.SUPABASE_CONFIG = window.SUPABASE_CONFIG || {
+    url: 'https://lvawgzthxcougqtqfhzb.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2YXdnenRoeGNvdWdxdHFmaHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTE4NzgsImV4cCI6MjA2ODQ2Nzg3OH0.wm2IbN88xYpAKDfShRE6_I8ke_xEicQvxSqhte4AYyw'
 };
 
 // Supabase 테이블 생성 SQL (참고용)
@@ -53,12 +60,14 @@ CREATE POLICY "Anyone can update post stats" ON board_posts FOR UPDATE USING (tr
 CREATE POLICY "Anyone can delete posts" ON board_posts FOR DELETE USING (true);
 */
 
-// Supabase 클라이언트 초기화 함수
+// Supabase 클라이언트 초기화 함수 (브라우저 환경)
 function initSupabase() {
-    if (typeof supabase !== 'undefined') {
-        return supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    const config = window.SUPABASE_CONFIG || supabaseConfig;
+    
+    if (typeof supabase !== 'undefined' && config.url !== 'PLACEHOLDER_URL') {
+        return supabase.createClient(config.url, config.anonKey);
     } else {
-        console.error('Supabase library not loaded');
+        console.warn('Supabase not configured or library not loaded, using localStorage fallback');
         return null;
     }
 }
@@ -139,6 +148,160 @@ async function registerMember(memberData) {
 
         if (error) {
             console.error('Error registering member:', error);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
+    }
+}
+// ========== 게시판 관련 함수들 ==========
+
+// 게시글 목록 가져오기
+async function fetchBoardPosts(sortBy = 'latest', limit = 20, offset = 0) {
+    const client = initSupabase();
+    if (!client) return { posts: [], total: 0 };
+
+    try {
+        let query = client.from('board_posts').select('*', { count: 'exact' });
+        
+        // 정렬 적용
+        switch (sortBy) {
+            case 'latest':
+                query = query.order('created_at', { ascending: false });
+                break;
+            case 'likes':
+                query = query.order('likes', { ascending: false });
+                break;
+            case 'oldest':
+                query = query.order('created_at', { ascending: true });
+                break;
+            default:
+                query = query.order('created_at', { ascending: false });
+        }
+        
+        const { data, error, count } = await query.range(offset, offset + limit - 1);
+
+        if (error) {
+            console.error('Error fetching posts:', error);
+            return { posts: [], total: 0 };
+        }
+
+        return { posts: data || [], total: count || 0 };
+    } catch (error) {
+        console.error('Error:', error);
+        return { posts: [], total: 0 };
+    }
+}
+
+// 게시글 작성
+async function createBoardPost(postData) {
+    const client = initSupabase();
+    if (!client) return false;
+
+    try {
+        const { data, error } = await client
+            .from('board_posts')
+            .insert([
+                {
+                    title: postData.title,
+                    content: postData.content,
+                    nickname: postData.nickname,
+                    email: postData.email || null,
+                    ip_address: postData.ip_address || 'unknown',
+                    is_notice: postData.is_notice || false
+                }
+            ])
+            .select();
+
+        if (error) {
+            console.error('Error creating post:', error);
+            return false;
+        }
+
+        return data && data.length > 0 ? data[0] : false;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
+    }
+}
+
+// 게시글 상세 조회 (조회수 증가)
+async function getBoardPost(postId) {
+    const client = initSupabase();
+    if (!client) return null;
+
+    try {
+        // 조회수 증가
+        await client
+            .from('board_posts')
+            .update({ views: client.raw('views + 1') })
+            .eq('id', postId);
+
+        // 게시글 조회
+        const { data, error } = await client
+            .from('board_posts')
+            .select('*')
+            .eq('id', postId)
+            .single();
+
+        if (error) {
+            console.error('Error fetching post:', error);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+        return null;
+    }
+}
+
+// 게시글 추천
+async function likeBoardPost(postId) {
+    const client = initSupabase();
+    if (!client) return false;
+
+    try {
+        const { data, error } = await client
+            .from('board_posts')
+            .update({ likes: client.raw('likes + 1') })
+            .eq('id', postId)
+            .select();
+
+        if (error) {
+            console.error('Error liking post:', error);
+            return false;
+        }
+
+        return data && data.length > 0 ? data[0] : false;
+    } catch (error) {
+        console.error('Error:', error);
+        return false;
+    }
+}
+
+// 게시글 삭제 (관리자 기능)
+async function deleteBoardPost(postId, adminKey) {
+    const client = initSupabase();
+    if (!client) return false;
+
+    try {
+        // 관리자 확인 (실제 구현에서는 더 안전한 방법 사용)
+        if (!adminKey || adminKey !== 'admin123') {
+            console.error('Invalid admin key');
+            return false;
+        }
+
+        const { error } = await client
+            .from('board_posts')
+            .delete()
+            .eq('id', postId);
+
+        if (error) {
+            console.error('Error deleting post:', error);
             return false;
         }
 

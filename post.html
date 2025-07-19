@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세보기</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation (GNB) -->
+    <nav class="bg-white border-b border-gray-100 fixed w-full z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-cookie-bite text-white text-sm"></i>
+                        </div>
+                        <a href="index.html" class="text-xl font-semibold text-gray-900">한국마시멜로우</a>
+                    </div>
+                </div>
+                <div class="hidden lg:flex items-center space-x-10">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">홈</a>
+                    <a href="index.html#farming" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">마시멜로우 재배</a>
+                    <a href="index.html#about" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">협회소개</a>
+                    <a href="index.html#services" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">서비스</a>
+                    <a href="index.html#news" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">뉴스</a>
+                    <a href="board.html" class="text-pink-500 hover:text-pink-600 font-medium transition duration-200">게시판</a>
+                </div>
+                <div class="lg:hidden flex items-center">
+                    <button class="mobile-menu-button p-2">
+                        <i class="fas fa-bars text-gray-700"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Main Content -->
+    <main class="pt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow p-8 mt-4">
+                <button onclick="goToList()" class="mb-6 text-pink-600 hover:underline flex items-center"><i class="fas fa-arrow-left mr-2"></i>목록으로</button>
+                <div id="postDetail" class="min-h-[200px] flex flex-col items-center justify-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-2xl"></i>
+                    <span class="mt-2">게시글을 불러오는 중...</span>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+    // URL에서 id 파라미터 추출
+    function getPostIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('id');
+    }
+
+    function goToList() {
+        window.location.href = 'board.html';
+    }
+
+    // Supabase 설정
+    const config = window.SUPABASE_CONFIG;
+    let supabaseClient = null;
+    let useSupabase = false;
+    if (typeof supabase !== 'undefined' && config?.url && config?.anonKey) {
+        supabaseClient = supabase.createClient(config.url, config.anonKey);
+        useSupabase = true;
+    }
+    const STORAGE_KEY = 'marshmallow_board_posts';
+
+    function getPostsFromStorage() {
+        const posts = localStorage.getItem(STORAGE_KEY);
+        return posts ? JSON.parse(posts) : [];
+    }
+
+    function savePostsToStorage(posts) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    }
+
+    async function loadPostDetail(postId) {
+        const postDetail = document.getElementById('postDetail');
+        postDetail.innerHTML = '<i class="fas fa-spinner fa-spin text-2xl"></i><span class="mt-2">게시글을 불러오는 중...</span>';
+        let post = null;
+        let error = null;
+        let views = 0;
+        if (useSupabase && supabaseClient) {
+            try {
+                // 조회수 먼저 증가
+                const { data: currentPost, error: fetchError } = await supabaseClient
+                    .from('board_posts')
+                    .select('views')
+                    .eq('id', postId)
+                    .single();
+                if (!fetchError && currentPost) {
+                    views = (currentPost.views || 0) + 1;
+                    await supabaseClient
+                        .from('board_posts')
+                        .update({ views })
+                        .eq('id', postId);
+                }
+                // 게시글 조회
+                const { data, error: getError } = await supabaseClient
+                    .from('board_posts')
+                    .select('*')
+                    .eq('id', postId)
+                    .single();
+                if (getError || !data) {
+                    error = getError || { message: '게시글을 찾을 수 없습니다.' };
+                } else {
+                    post = data;
+                }
+            } catch (err) {
+                error = err;
+            }
+        } else {
+            // 로컬스토리지
+            const posts = getPostsFromStorage();
+            post = posts.find(p => String(p.id) === String(postId));
+            if (!post) {
+                error = { message: '게시글을 찾을 수 없습니다.' };
+            } else {
+                post.views = (post.views || 0) + 1;
+                savePostsToStorage(posts);
+            }
+        }
+        if (error) {
+            postDetail.innerHTML = `<div class='text-center text-red-500'><i class='fas fa-exclamation-triangle'></i> ${error.message || '오류가 발생했습니다.'}</div>`;
+            return;
+        }
+        // 상세 정보 출력
+        const createdAt = new Date(post.created_at).toLocaleString('ko-KR');
+        postDetail.innerHTML = `
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">${post.title}</h2>
+            <div class="flex items-center text-sm text-gray-500 mb-4">
+                <span class="mr-4"><i class="fas fa-user mr-1"></i>${post.nickname}</span>
+                <span class="mr-4"><i class="fas fa-clock mr-1"></i>${createdAt}</span>
+                <span class="mr-4"><i class="fas fa-thumbs-up mr-1"></i><span id="likeCount">${post.likes || 0}</span></span>
+                <span><i class="fas fa-eye mr-1"></i>${post.views || views || 0}</span>
+            </div>
+            <div class="prose max-w-none text-gray-800 mb-8">${post.content.replace(/\n/g, '<br>')}</div>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mt-8">
+                <button onclick="likePost(${post.id})" class="flex items-center space-x-2 px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition">
+                    <i class="fas fa-heart"></i><span>추천</span>
+                </button>
+                <button onclick="goToList()" class="text-gray-500 hover:underline px-4 py-2 border border-gray-200 rounded transition">목록으로</button>
+            </div>
+        `;
+    }
+
+    async function likePost(postId) {
+        if (useSupabase && supabaseClient) {
+            try {
+                // 현재 추천수 가져오기
+                const { data: currentPost, error: fetchError } = await supabaseClient
+                    .from('board_posts')
+                    .select('likes')
+                    .eq('id', postId)
+                    .single();
+                if (fetchError) throw fetchError;
+                const newLikes = (currentPost.likes || 0) + 1;
+                const { error } = await supabaseClient
+                    .from('board_posts')
+                    .update({ likes: newLikes })
+                    .eq('id', postId);
+                if (error) throw error;
+                document.getElementById('likeCount').textContent = newLikes;
+            } catch (err) {
+                alert('추천에 실패했습니다.');
+            }
+        } else {
+            // 로컬스토리지
+            const posts = getPostsFromStorage();
+            const post = posts.find(p => String(p.id) === String(postId));
+            if (!post) {
+                alert('게시글을 찾을 수 없습니다.');
+                return;
+            }
+            post.likes = (post.likes || 0) + 1;
+            savePostsToStorage(posts);
+            document.getElementById('likeCount').textContent = post.likes;
+        }
+    }
+
+    // 페이지 로드시 실행
+    document.addEventListener('DOMContentLoaded', function() {
+        const postId = getPostIdFromUrl();
+        if (!postId) {
+            document.getElementById('postDetail').innerHTML = '<div class="text-center text-red-500">잘못된 접근입니다.</div>';
+            return;
+        }
+        loadPostDetail(postId);
+    });
+    </script>
+</body>
+</html> 
