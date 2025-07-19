@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시판 - 한국마시멜로우협회</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white/95 backdrop-blur-sm border-b border-gray-100 fixed w-full z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <div class="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-cookie-bite text-white text-sm"></i>
+                        </div>
+                        <a href="index.html" class="text-xl font-semibold text-gray-900">한국마시멜로우협회</a>
+                    </div>
+                </div>
+                <div class="hidden lg:flex items-center space-x-10">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">홈</a>
+                    <a href="index.html#farming" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">마시멜로우 재배</a>
+                    <a href="index.html#about" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">협회소개</a>
+                    <a href="index.html#services" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">서비스</a>
+                    <a href="index.html#news" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">뉴스</a>
+                    <a href="board.html" class="text-pink-500 hover:text-pink-600 font-medium transition duration-200">게시판</a>
+                </div>
+                <div class="lg:hidden flex items-center">
+                    <button class="mobile-menu-button p-2">
+                        <i class="fas fa-bars text-gray-700"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">마시멜로우 게시판</h1>
+                <p class="text-lg text-gray-600">마시멜로우에 관한 이야기를 자유롭게 나누어보세요.</p>
+            </div>
+
+            <!-- Write Post Button -->
+            <div class="mb-6 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <button id="writePostBtn" class="bg-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-pink-600 transition duration-300">
+                        <i class="fas fa-pen mr-2"></i>글 쓰기
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-600">정렬:</label>
+                        <select id="sortSelect" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <option value="latest">최신순</option>
+                            <option value="likes">추천순</option>
+                            <option value="oldest">오래된순</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-500">
+                    총 <span id="totalPosts">0</span>개의 게시글
+                </div>
+            </div>
+
+            <!-- Posts List -->
+            <div id="postsList" class="space-y-4">
+                <!-- Posts will be loaded here -->
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="mt-8 flex justify-center">
+                <!-- Pagination will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Write Post Modal -->
+    <div id="writeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">새 글 작성</h2>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="postForm" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">닉네임 *</label>
+                        <input type="text" id="nickname" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="닉네임을 입력하세요">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                        <input type="email" id="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="이메일을 입력하세요 (선택사항)">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">제목 *</label>
+                        <input type="text" id="title" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="제목을 입력하세요">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">내용 *</label>
+                        <textarea id="content" required rows="8" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="내용을 입력하세요"></textarea>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input type="checkbox" id="isNotice" class="mr-2">
+                        <label for="isNotice" class="text-sm text-gray-700">공지사항으로 등록 (관리자만)</label>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" id="cancelBtn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-300">
+                            취소
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition duration-300">
+                            작성완료
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Detail Modal -->
+    <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div id="postDetail">
+                    <!-- Post detail will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script>
+        // Supabase 클라이언트 초기화
+        const supabaseUrl = 'YOUR_SUPABASE_URL';
+        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 전역 변수
+        let currentPage = 1;
+        const postsPerPage = 10;
+        let currentSort = 'latest';
+
+        // 사용자 IP 가져오기
+        async function getUserIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                return data.ip;
+            } catch (error) {
+                console.error('IP 가져오기 실패:', error);
+                return 'unknown';
+            }
+        }
+
+        // 게시글 목록 로드
+        async function loadPosts() {
+            try {
+                let query = supabase
+                    .from('board_posts')
+                    .select('*', { count: 'exact' });
+
+                // 정렬 적용
+                switch (currentSort) {
+                    case 'latest':
+                        query = query.order('created_at', { ascending: false });
+                        break;
+                    case 'likes':
+                        query = query.order('likes', { ascending: false });
+                        break;
+                    case 'oldest':
+                        query = query.order('created_at', { ascending: true });
+                        break;
+                }
+
+                // 페이지네이션 적용
+                const from = (currentPage - 1) * postsPerPage;
+                const to = from + postsPerPage - 1;
+                query = query.range(from, to);
+
+                const { data: posts, error, count } = await query;
+
+                if (error) throw error;
+
+                displayPosts(posts);
+                displayPagination(count);
+                document.getElementById('totalPosts').textContent = count || 0;
+
+            } catch (error) {
+                console.error('게시글 로드 실패:', error);
+                alert('게시글을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 게시글 표시
+        function displayPosts(posts) {
+            const postsList = document.getElementById('postsList');
+            
+            if (!posts || posts.length === 0) {
+                postsList.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-clipboard-list text-gray-300 text-6xl mb-4"></i>
+                        <p class="text-gray-500 text-lg">아직 게시글이 없습니다.</p>
+                        <p class="text-gray-400">첫 번째 글을 작성해보세요!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            postsList.innerHTML = posts.map(post => `
+                <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-100 card-hover cursor-pointer" onclick="viewPost(${post.id})">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2 mb-2">
+                                ${post.is_notice ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>' : ''}
+                                <h3 class="text-lg font-semibold text-gray-900 hover:text-pink-600 transition duration-200">
+                                    ${post.title}
+                                </h3>
+                            </div>
+                            <p class="text-gray-600 mb-3 line-clamp-2">${post.content.substring(0, 100)}${post.content.length > 100 ? '...' : ''}</p>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
+                                <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleDateString('ko-KR')}</span>
+                                <span><i class="fas fa-thumbs-up mr-1"></i>${post.likes || 0}</span>
+                                <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 페이지네이션 표시
+        function displayPagination(totalCount) {
+            const totalPages = Math.ceil(totalCount / postsPerPage);
+            const pagination = document.getElementById('pagination');
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // 이전 페이지
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="changePage(${currentPage - 1})" class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">이전</button>`;
+            }
+
+            // 페이지 번호
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                paginationHTML += `
+                    <button onclick="changePage(${i})" class="px-3 py-2 mx-1 ${i === currentPage ? 'bg-pink-500 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-lg transition duration-200">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            // 다음 페이지
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="changePage(${currentPage + 1})" class="px-3 py-2 mx-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">다음</button>`;
+            }
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        // 페이지 변경
+        function changePage(page) {
+            currentPage = page;
+            loadPosts();
+        }
+
+        // 게시글 작성
+        async function submitPost(formData) {
+            try {
+                const userIP = await getUserIP();
+                
+                const postData = {
+                    title: formData.title,
+                    content: formData.content,
+                    nickname: formData.nickname,
+                    email: formData.email || null,
+                    ip_address: userIP,
+                    is_notice: formData.isNotice || false,
+                    likes: 0,
+                    views: 0,
+                    created_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('board_posts')
+                    .insert([postData]);
+
+                if (error) throw error;
+
+                alert('게시글이 성공적으로 작성되었습니다!');
+                closeWriteModal();
+                loadPosts();
+
+            } catch (error) {
+                console.error('게시글 작성 실패:', error);
+                alert('게시글 작성에 실패했습니다.');
+            }
+        }
+
+        // 게시글 상세보기
+        async function viewPost(postId) {
+            try {
+                // 조회수 증가
+                await supabase
+                    .from('board_posts')
+                    .update({ views: supabase.sql`views + 1` })
+                    .eq('id', postId);
+
+                // 게시글 데이터 가져오기
+                const { data: post, error } = await supabase
+                    .from('board_posts')
+                    .select('*')
+                    .eq('id', postId)
+                    .single();
+
+                if (error) throw error;
+
+                displayPostDetail(post);
+                document.getElementById('detailModal').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('게시글 로드 실패:', error);
+                alert('게시글을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 게시글 상세 표시
+        function displayPostDetail(post) {
+            const postDetail = document.getElementById('postDetail');
+            postDetail.innerHTML = `
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-2">
+                            ${post.is_notice ? '<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-medium">공지</span>' : ''}
+                            <h1 class="text-2xl font-bold text-gray-900">${post.title}</h1>
+                        </div>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-user mr-1"></i>${post.nickname}</span>
+                            <span><i class="fas fa-clock mr-1"></i>${new Date(post.created_at).toLocaleString('ko-KR')}</span>
+                            <span><i class="fas fa-eye mr-1"></i>${post.views || 0}</span>
+                        </div>
+                    </div>
+                    <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="prose max-w-none mb-6">
+                    <div class="text-gray-700 leading-relaxed whitespace-pre-wrap">${post.content}</div>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="flex items-center justify-between">
+                        <button onclick="likePost(${post.id})" class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-pink-100 text-gray-700 hover:text-pink-600 rounded-lg transition duration-200">
+                            <i class="fas fa-thumbs-up"></i>
+                            <span>추천 (<span id="likeCount">${post.likes || 0}</span>)</span>
+                        </button>
+                        
+                        <div class="flex space-x-2">
+                            <button onclick="closeDetailModal()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition duration-200">
+                                닫기
+                            </button>
+                            <button onclick="deletePost(${post.id})" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-200">
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 게시글 추천
+        async function likePost(postId) {
+            try {
+                const { data, error } = await supabase
+                    .from('board_posts')
+                    .update({ likes: supabase.sql`likes + 1` })
+                    .eq('id', postId)
+                    .select();
+
+                if (error) throw error;
+
+                document.getElementById('likeCount').textContent = data[0].likes;
+                loadPosts(); // 목록 새로고침
+
+            } catch (error) {
+                console.error('추천 실패:', error);
+                alert('추천에 실패했습니다.');
+            }
+        }
+
+        // 게시글 삭제
+        async function deletePost(postId) {
+            if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('board_posts')
+                    .delete()
+                    .eq('id', postId);
+
+                if (error) throw error;
+
+                alert('게시글이 삭제되었습니다.');
+                closeDetailModal();
+                loadPosts();
+
+            } catch (error) {
+                console.error('삭제 실패:', error);
+                alert('게시글 삭제에 실패했습니다.');
+            }
+        }
+
+        // 모달 관련 함수들
+        function openWriteModal() {
+            document.getElementById('writeModal').classList.remove('hidden');
+        }
+
+        function closeWriteModal() {
+            document.getElementById('writeModal').classList.add('hidden');
+            document.getElementById('postForm').reset();
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', function() {
+            // 초기 로드
+            loadPosts();
+
+            // 글쓰기 버튼
+            document.getElementById('writePostBtn').addEventListener('click', openWriteModal);
+            
+            // 모달 닫기
+            document.getElementById('closeModal').addEventListener('click', closeWriteModal);
+            document.getElementById('cancelBtn').addEventListener('click', closeWriteModal);
+
+            // 정렬 변경
+            document.getElementById('sortSelect').addEventListener('change', function(e) {
+                currentSort = e.target.value;
+                currentPage = 1;
+                loadPosts();
+            });
+
+            // 폼 제출
+            document.getElementById('postForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = {
+                    title: document.getElementById('title').value,
+                    content: document.getElementById('content').value,
+                    nickname: document.getElementById('nickname').value,
+                    email: document.getElementById('email').value,
+                    isNotice: document.getElementById('isNotice').checked
+                };
+
+                submitPost(formData);
+            });
+
+            // 모달 외부 클릭시 닫기
+            document.getElementById('writeModal').addEventListener('click', function(e) {
+                if (e.target === this) closeWriteModal();
+            });
+
+            document.getElementById('detailModal').addEventListener('click', function(e) {
+                if (e.target === this) closeDetailModal();
+            });
+        });
+    </script>
+</body>
+</html>
