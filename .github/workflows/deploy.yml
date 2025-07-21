@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# GitHub Pages에 대한 권한 설정
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -25,29 +31,37 @@ jobs:
         SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       run: |
         # HTML 파일에 환경 변수 주입
-        sed -i "s|window.SUPABASE_URL \|\| 'PLACEHOLDER_URL'|'$SUPABASE_URL'|g" board.html
-        sed -i "s|window.SUPABASE_ANON_KEY \|\| 'PLACEHOLDER_KEY'|'$SUPABASE_ANON_KEY'|g" board.html
-        
-        # index.html에도 필요시 적용
-        if grep -q "SUPABASE" index.html; then
-          sed -i "s|window.SUPABASE_URL \|\| 'PLACEHOLDER_URL'|'$SUPABASE_URL'|g" index.html
-          sed -i "s|window.SUPABASE_ANON_KEY \|\| 'PLACEHOLDER_KEY'|'$SUPABASE_ANON_KEY'|g" index.html
+        if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; then
+          echo "Injecting Supabase credentials into HTML files..."
+          sed -i "s|window.SUPABASE_CONFIG = {|window.SUPABASE_CONFIG = {|g" board.html
+          sed -i "s|url: 'https://lvawgzthxcougqtqfhzb.supabase.co'|url: '$SUPABASE_URL'|g" board.html
+          sed -i "s|anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2YXdnenRoeGNvdWdxdHFmaHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTE4NzgsImV4cCI6MjA2ODQ2Nzg3OH0.wm2IbN88xYpAKDfShRE6_I8ke_xEicQvxSqhte4AYyw'|anonKey: '$SUPABASE_ANON_KEY'|g" board.html
+        else
+          echo "Supabase credentials not found in secrets. Using default values."
         fi
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
+    # 배포할 파일 준비
+    - name: Prepare files for deployment
+      run: |
+        mkdir -p ./deploy
+        cp -r *.html ./deploy/
+        cp -r *.js ./deploy/
+        cp -r *.css ./deploy/ 2>/dev/null || true
+        cp -r asset ./deploy/ 2>/dev/null || true
+        cp -r images ./deploy/ 2>/dev/null || true
+        cp -r fonts ./deploy/ 2>/dev/null || true
+        cp -r favicon.ico ./deploy/ 2>/dev/null || true
+        ls -la ./deploy
+
+    # GitHub Pages에 배포
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
-        exclude_assets: >-
-          .github,
-          README.md,
-          .gitignore,
-          .env,
-          .env.example,
-          .kiro,
-          *.py,
-          test_*.html,
-          MCP_SETUP.md,
-          SUPABASE_SETUP.md
+        path: './deploy'
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
