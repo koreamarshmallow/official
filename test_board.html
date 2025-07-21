@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시판 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>게시판 연결 테스트</h1>
+    <button onclick="testConnection()">연결 테스트</button>
+    <button onclick="loadPosts()">게시글 로드</button>
+    <div id="result"></div>
+    <div id="posts"></div>
+
+    <script>
+        // Supabase 설정
+        const supabaseUrl = 'https://lvawgzthxcougqtqfhzb.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2YXdnenRoeGNvdWdxdHFmaHpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI4OTE4NzgsImV4cCI6MjA2ODQ2Nzg3OH0.wm2IbN88xYpAKDfShRE6_I8ke_xEicQvxSqhte4AYyw';
+        
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            try {
+                console.log('연결 테스트 시작...');
+                resultDiv.innerHTML = '연결 테스트 중...';
+                
+                // 간단한 쿼리로 연결 테스트
+                const { data, error } = await supabaseClient
+                    .from('board_posts')
+                    .select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    console.error('연결 오류:', error);
+                    resultDiv.innerHTML = `❌ 연결 실패: ${error.message}`;
+                } else {
+                    console.log('연결 성공:', data);
+                    resultDiv.innerHTML = '✅ Supabase 연결 성공!';
+                }
+            } catch (err) {
+                console.error('예외 발생:', err);
+                resultDiv.innerHTML = `❌ 예외 발생: ${err.message}`;
+            }
+        }
+        
+        async function loadPosts() {
+            const postsDiv = document.getElementById('posts');
+            try {
+                console.log('게시글 로드 시작...');
+                postsDiv.innerHTML = '게시글 로드 중...';
+                
+                const { data, error } = await supabaseClient
+                    .from('board_posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('게시글 로드 오류:', error);
+                    postsDiv.innerHTML = `❌ 로드 실패: ${error.message}`;
+                } else {
+                    console.log('게시글 로드 성공:', data);
+                    
+                    if (data && data.length > 0) {
+                        let html = '<h2>게시글 목록:</h2>';
+                        data.forEach(post => {
+                            html += `
+                                <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
+                                    <h3>${post.title}</h3>
+                                    <p>작성자: ${post.nickname}</p>
+                                    <p>내용: ${post.content.substring(0, 100)}...</p>
+                                    <p>작성일: ${new Date(post.created_at).toLocaleString()}</p>
+                                </div>
+                            `;
+                        });
+                        postsDiv.innerHTML = html;
+                    } else {
+                        postsDiv.innerHTML = '게시글이 없습니다.';
+                    }
+                }
+            } catch (err) {
+                console.error('예외 발생:', err);
+                postsDiv.innerHTML = `❌ 예외 발생: ${err.message}`;
+            }
+        }
+        
+        // 페이지 로드시 자동 테스트
+        window.addEventListener('load', function() {
+            console.log('페이지 로드됨');
+            testConnection();
+        });
+    </script>
+</body>
+</html>

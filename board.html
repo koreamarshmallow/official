@@ -48,10 +48,40 @@
                     <a href="index.html#news" class="text-gray-600 hover:text-gray-900 font-medium transition duration-200">뉴스</a>
                     <a href="board.html" class="text-pink-500 hover:text-pink-600 font-medium transition duration-200">게시판</a>
                 </div>
-                <div class="lg:hidden flex items-center">
-                    <button class="mobile-menu-button p-2">
-                        <i class="fas fa-bars text-gray-700"></i>
+                <div class="lg:hidden flex-shrink-0 ml-4">
+                    <button id="mobile-menu-button" class="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition duration-200">
+                        <i id="menu-icon" class="fas fa-bars text-xl"></i>
                     </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="lg:hidden hidden transform transition-all duration-300 ease-in-out opacity-0 scale-95 absolute top-20 inset-x-0 z-50 bg-white shadow-lg">
+                <div class="px-2 pt-2 pb-3 space-y-1 border-t border-gray-100">
+                    <a href="index.html" class="mobile-menu-link flex items-center px-3 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-home w-6 text-pink-500"></i>
+                        <span class="ml-2">홈</span>
+                    </a>
+                    <a href="index.html#farming" class="mobile-menu-link flex items-center px-3 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-seedling w-6 text-green-500"></i>
+                        <span class="ml-2">마시멜로우 재배</span>
+                    </a>
+                    <a href="index.html#about" class="mobile-menu-link flex items-center px-3 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-info-circle w-6 text-blue-500"></i>
+                        <span class="ml-2">협회소개</span>
+                    </a>
+                    <a href="index.html#services" class="mobile-menu-link flex items-center px-3 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-cogs w-6 text-purple-500"></i>
+                        <span class="ml-2">서비스</span>
+                    </a>
+                    <a href="index.html#news" class="mobile-menu-link flex items-center px-3 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-newspaper w-6 text-yellow-500"></i>
+                        <span class="ml-2">뉴스</span>
+                    </a>
+                    <a href="board.html" class="mobile-menu-link flex items-center px-3 py-3 text-pink-500 hover:text-pink-600 hover:bg-pink-50 rounded-md font-medium transition duration-200">
+                        <i class="fas fa-comments w-6 text-pink-500"></i>
+                        <span class="ml-2">게시판</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -480,7 +510,71 @@
         
         // 게시글 상세보기 (Supabase 또는 로컬 스토리지)
         async function viewPost(postId) {
-            location.href = `post.html?id=${postId}`;
+            console.log('게시글 상세보기:', postId);
+            
+            if (useSupabase && supabaseClient) {
+                try {
+                    // 먼저 현재 조회수를 가져온 후 증가
+                    const { data: currentPost, error: fetchError } = await supabaseClient
+                        .from('board_posts')
+                        .select('views')
+                        .eq('id', postId)
+                        .single();
+                    
+                    if (!fetchError && currentPost) {
+                        const { error: updateError } = await supabaseClient
+                            .from('board_posts')
+                            .update({ views: (currentPost.views || 0) + 1 })
+                            .eq('id', postId);
+                        
+                        if (updateError) {
+                            console.error('조회수 업데이트 오류:', updateError);
+                        }
+                    }
+                    
+                    // 게시글 조회
+                    const { data, error } = await supabaseClient
+                        .from('board_posts')
+                        .select('*')
+                        .eq('id', postId)
+                        .single();
+                    
+                    if (error) {
+                        console.error('게시글 조회 오류:', error);
+                        alert('게시글을 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    // 상세 모달 표시
+                    const createdAt = new Date(data.created_at).toLocaleString('ko-KR');
+                    alert(`📝 ${data.title}\n\n👤 작성자: ${data.nickname}\n📅 작성일: ${createdAt}\n👍 추천: ${data.likes || 0} | 👁️ 조회: ${data.views || 0}\n\n📄 내용:\n${data.content}`);
+                    
+                    // 목록 새로고침
+                    loadPosts();
+                    
+                } catch (error) {
+                    console.error('게시글 상세보기 오류:', error);
+                    alert('게시글을 불러오는데 실패했습니다.');
+                }
+            } else {
+                // 로컬 스토리지 사용
+                const posts = getPostsFromStorage();
+                const post = posts.find(p => p.id === postId);
+                
+                if (!post) {
+                    alert('게시글을 찾을 수 없습니다.');
+                    return;
+                }
+                
+                // 조회수 증가
+                post.views = (post.views || 0) + 1;
+                savePostsToStorage(posts);
+                
+                const createdAt = new Date(post.created_at).toLocaleString('ko-KR');
+                alert(`📝 ${post.title}\n\n👤 작성자: ${post.nickname}\n📅 작성일: ${createdAt}\n👍 추천: ${post.likes || 0} | 👁️ 조회: ${post.views || 0}\n\n📄 내용:\n${post.content}`);
+                
+                loadPosts(); // 조회수 업데이트 반영
+            }
         }
         
         // 게시글 추천 기능 (Supabase 또는 로컬 스토리지)
@@ -651,6 +745,55 @@
                     }
                 });
             }
+            
+            // 모바일 메뉴 토글 기능
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuIcon = document.getElementById('menu-icon');
+            let isMenuOpen = false;
+            
+            function toggleMobileMenu() {
+                isMenuOpen = !isMenuOpen;
+                
+                if (isMenuOpen) {
+                    // 메뉴 열기
+                    mobileMenu.classList.remove('hidden', 'opacity-0', 'scale-95');
+                    mobileMenu.classList.add('opacity-100', 'scale-100');
+                    menuIcon.classList.remove('fa-bars');
+                    menuIcon.classList.add('fa-times');
+                } else {
+                    // 메뉴 닫기
+                    mobileMenu.classList.add('opacity-0', 'scale-95');
+                    menuIcon.classList.remove('fa-times');
+                    menuIcon.classList.add('fa-bars');
+                    
+                    // 애니메이션 후 숨기기
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                    }, 300);
+                }
+            }
+            
+            // 모바일 메뉴 버튼 클릭 이벤트
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', toggleMobileMenu);
+            }
+            
+            // 모바일 메뉴 링크 클릭 시 메뉴 닫기
+            document.querySelectorAll('.mobile-menu-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (isMenuOpen) {
+                        toggleMobileMenu();
+                    }
+                });
+            });
+            
+            // 스크롤 시 메뉴 닫기
+            window.addEventListener('scroll', () => {
+                if (isMenuOpen) {
+                    toggleMobileMenu();
+                }
+            });
         });
     </script>
 </body>

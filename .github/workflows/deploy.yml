@@ -3,35 +3,41 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
-        path: '.'
+        node-version: '18'
+
+    - name: Build with environment variables
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      run: |
+        # HTML 파일에 환경 변수 주입
+        sed -i "s|window.SUPABASE_URL \|\| 'PLACEHOLDER_URL'|'$SUPABASE_URL'|g" board.html
+        sed -i "s|window.SUPABASE_ANON_KEY \|\| 'PLACEHOLDER_KEY'|'$SUPABASE_ANON_KEY'|g" board.html
         
+        # index.html에도 필요시 적용
+        if grep -q "SUPABASE" index.html; then
+          sed -i "s|window.SUPABASE_URL \|\| 'PLACEHOLDER_URL'|'$SUPABASE_URL'|g" index.html
+          sed -i "s|window.SUPABASE_ANON_KEY \|\| 'PLACEHOLDER_KEY'|'$SUPABASE_ANON_KEY'|g" index.html
+        fi
+
     - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        exclude_assets: '.github,README.md,.gitignore,.env.example'
