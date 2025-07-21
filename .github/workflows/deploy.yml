@@ -40,4 +40,14 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./
-        exclude_assets: '.github,README.md,.gitignore,.env.example'
+        exclude_assets: >-
+          .github,
+          README.md,
+          .gitignore,
+          .env,
+          .env.example,
+          .kiro,
+          *.py,
+          test_*.html,
+          MCP_SETUP.md,
+          SUPABASE_SETUP.md
